@@ -2,12 +2,16 @@ import numpy as np
 import sounddevice as sd
 from pynput import keyboard
 
+from synth.oscillator import Oscillator
+
 
 # -------------------------
 # Настройки синтезатора
 # -------------------------
 
 SAMPLE_RATE = 44100
+
+oscillator = Oscillator(SAMPLE_RATE)
 
 # Сопоставляем клавиши компьютера с нотами.
 
@@ -69,36 +73,21 @@ phase = 0.0
 
 
 def audio_callback(outdata, frames, time, status):
-    global phase
 
     if status:
         print(status)
 
-    # Пока никакая клавиша не нажата —
-    # отправляем тишину.
     if current_frequency is None:
         outdata[:] = 0
         return
 
-    # Создаём массив времени для этого блока.
-    t = (
-        np.arange(frames) + phase
-    ) / SAMPLE_RATE
+    oscillator.set_frequency(current_frequency)
 
-    # Генерируем синусоиду.
-    wave = np.sin(
-        2 * np.pi * current_frequency * t
-    )
+    wave = oscillator.generate(frames)
 
-    # Немного уменьшаем громкость,
-    # чтобы сигнал не был слишком сильным.
     wave *= 0.2
 
-    # Передаём звук на выход.
     outdata[:, 0] = wave
-
-    # Сохраняем фазу для следующего блока.
-    phase += frames
 
 
 # -------------------------
