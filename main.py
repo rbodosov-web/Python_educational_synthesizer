@@ -4,6 +4,8 @@ from pynput import keyboard
 
 from synth.oscillator import Oscillator
 
+from synth.envelope import ADSR
+
 
 # -------------------------
 # Настройки синтезатора
@@ -11,8 +13,16 @@ from synth.oscillator import Oscillator
 
 SAMPLE_RATE = 44100
 
-oscillator = Oscillator(SAMPLE_RATE)
-
+oscillator = Oscillator(
+    SAMPLE_RATE
+)
+envelope = ADSR(
+    SAMPLE_RATE,
+    attack=0.05,
+    decay=0.2,
+    sustain=0.7,
+    release=0.5
+)
 # Сопоставляем клавиши компьютера с нотами.
 
 KEY_TO_FREQUENCY = {
@@ -44,6 +54,10 @@ def on_press(key):
     try:
         if key.char in KEY_TO_FREQUENCY:
             current_frequency = KEY_TO_FREQUENCY[key.char]
+
+            oscillator.set_frequency(current_frequency)
+            envelope.note_on()
+            
             print(f"Playing {key.char}: {current_frequency} Hz")
 
     except AttributeError:
@@ -55,7 +69,8 @@ def on_release(key):
 
     try:
         if key.char in KEY_TO_FREQUENCY:
-            current_frequency = None
+
+            envelope.note_off()
 
     except AttributeError:
         pass
@@ -77,13 +92,13 @@ def audio_callback(outdata, frames, time, status):
     if status:
         print(status)
 
-    if current_frequency is None:
-        outdata[:] = 0
-        return
-
-    oscillator.set_frequency(current_frequency)
-
     wave = oscillator.generate(frames)
+
+    envelope_signal = np.array(
+        envelope.generate(frames)
+    )
+
+    wave *= envelope_signal
 
     wave *= 0.2
 
