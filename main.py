@@ -1,29 +1,11 @@
-import numpy as np
 import sounddevice as sd
 from pynput import keyboard
 
-from synth.oscillator import Oscillator
+from synth.synthesizer import Synthesizer
 
-from synth.envelope import ADSR
-
-
-# -------------------------
-# Настройки синтезатора
-# -------------------------
 
 SAMPLE_RATE = 44100
 
-oscillator = Oscillator(
-    SAMPLE_RATE
-)
-envelope = ADSR(
-    SAMPLE_RATE,
-    attack=0.05,
-    decay=0.2,
-    sustain=0.7,
-    release=0.5
-)
-# Сопоставляем клавиши компьютера с нотами.
 
 KEY_TO_FREQUENCY = {
     'a': 261.63,  # C4
@@ -37,77 +19,66 @@ KEY_TO_FREQUENCY = {
 }
 
 
-# -------------------------
-# Состояние синтезатора
-# -------------------------
+synth = Synthesizer(
+    SAMPLE_RATE,
+    max_voices=8
+)
 
-current_frequency = None
-
-
-# -------------------------
-# Обработка клавиатуры
-# -------------------------
+pressed_keys = set()
 
 def on_press(key):
-    global current_frequency
-
     try:
         if key.char in KEY_TO_FREQUENCY:
-            current_frequency = KEY_TO_FREQUENCY[key.char]
 
-            oscillator.set_frequency(current_frequency)
-            envelope.note_on()
-            
-            print(f"Playing {key.char}: {current_frequency} Hz")
+            # Если клавиша уже нажата — ничего не делаем
+            if key.char in pressed_keys:
+                return
+
+            pressed_keys.add(key.char)
+
+            frequency = KEY_TO_FREQUENCY[key.char]
+            synth.note_on(frequency)
+
+            print(f"Note ON: {key.char} {frequency} Hz")
 
     except AttributeError:
         pass
 
 
 def on_release(key):
-    global current_frequency
-
     try:
         if key.char in KEY_TO_FREQUENCY:
 
-            envelope.note_off()
+            pressed_keys.discard(key.char)
+
+            frequency = KEY_TO_FREQUENCY[key.char]
+            synth.note_off(frequency)
+
+            print(f"Note OFF: {key.char} {frequency} Hz")
 
     except AttributeError:
         pass
 
-    # ESC завершает программу
     if key == keyboard.Key.esc:
         return False
 
 
-# -------------------------
-# Создаём аудиопоток
-# -------------------------
-
-phase = 0.0
-
-
-def audio_callback(outdata, frames, time, status):
+def audio_callback(
+    outdata,
+    frames,
+    time,
+    status
+):
 
     if status:
         print(status)
 
-    wave = oscillator.generate(frames)
+    samples = synth.generate(frames)
 
-    envelope_signal = np.array(
-        envelope.generate(frames)
-    )
+    samples *= 0.15
 
-    wave *= envelope_signal
+    outdata[:, 0] = samples
 
-    wave *= 0.2
-
-    outdata[:, 0] = wave
-
-
-# -------------------------
-# Запускаем программу
-# -------------------------
 
 print("My Synth")
 print("Use A S D F G H J K to play.")
@@ -119,6 +90,7 @@ with sd.OutputStream(
     channels=1,
     callback=audio_callback
 ):
+
     with keyboard.Listener(
         on_press=on_press,
         on_release=on_release
