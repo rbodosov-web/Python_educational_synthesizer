@@ -24,26 +24,28 @@ synth = Synthesizer(
     max_voices=8
 )
 
-pressed_keys = {}
+pressed_keys = set()
 
 def on_press(key):
     try:
         if key.char in KEY_TO_FREQUENCY:
 
-            # Если клавиша уже нажата — ничего не делаем
             if key.char in pressed_keys:
                 return
 
+            pressed_keys.add(key.char)
+
             frequency = KEY_TO_FREQUENCY[key.char]
 
-            # Получаем конкретный Voice
-            voice = synth.note_on(frequency)
+            synth.note_on(
+                key.char,
+                frequency
+            )
 
-            # Запоминаем, какой Voice принадлежит клавише
-            if voice is not None:
-                pressed_keys[key.char] = voice
-
-            print(f"Note ON: {key.char} {frequency} Hz")
+            print(
+                f"Note ON: "
+                f"{key.char} {frequency} Hz"
+            )
 
     except AttributeError:
         pass
@@ -53,14 +55,13 @@ def on_release(key):
     try:
         if key.char in KEY_TO_FREQUENCY:
 
-            # Получаем именно тот Voice,
-            # который был создан для этой клавиши
-            voice = pressed_keys.pop(key.char, None)
+            pressed_keys.discard(key.char)
 
-            if voice is not None:
-                synth.note_off(voice)
+            synth.note_off(key.char)
 
-            print(f"Note OFF: {key.char}")
+            print(
+                f"Note OFF: {key.char}"
+            )
 
     except AttributeError:
         pass
@@ -80,8 +81,6 @@ def audio_callback(
         print(status)
 
     samples = synth.generate(frames)
-
-    samples *= 0.15
 
     outdata[:, 0] = samples
 
