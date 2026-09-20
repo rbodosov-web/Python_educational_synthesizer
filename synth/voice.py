@@ -26,16 +26,19 @@ class Voice:
         self.active = False
         self.frequency = 0.0
 
-    def note_on(self, frequency):
+        self.start_time = 0
 
+        self.key = None
+
+    def note_on(self, frequency, key=None):
         self.frequency = frequency
 
-        self.oscillator.set_frequency(
-            frequency
-        )
+        self.key = key
+
+        self.oscillator.set_frequency(frequency)
 
         self.envelope.note_on()
-
+        
         self.active = True
 
     def note_off(self):
