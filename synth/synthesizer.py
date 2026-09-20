@@ -10,7 +10,6 @@ class Synthesizer:
         sample_rate=44100,
         max_voices=8
     ):
-
         self.sample_rate = sample_rate
         self.max_voices = max_voices
 
@@ -21,27 +20,26 @@ class Synthesizer:
 
     def note_on(self, frequency):
 
-        # Ищем свободный голос.
+        # Ищем свободный голос
         for voice in self.voices:
 
             if not voice.active:
 
                 voice.note_on(frequency)
-                return
 
-        # Если свободных голосов нет,
-        # пока просто игнорируем новую ноту.
+                # Возвращаем конкретный Voice,
+                # который получил эту ноту
+                return voice
 
-    def note_off(self, frequency):
+        # Свободных голосов нет
+        return None
 
-        for voice in self.voices:
+    def note_off(self, voice):
 
-            if (
-                voice.active
-                and voice.frequency == frequency
-            ):
-                voice.note_off()
-                return
+        # Отпускаем именно тот Voice,
+        # который принадлежит этой клавише
+        if voice is not None:
+            voice.note_off()
 
     def generate(self, frames):
 
@@ -50,9 +48,6 @@ class Synthesizer:
         for voice in self.voices:
 
             if voice.active:
-
-                output += voice.generate(
-                    frames
-                )
+                output += voice.generate(frames)
 
         return output
