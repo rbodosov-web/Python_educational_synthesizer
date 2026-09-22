@@ -2,12 +2,16 @@ import numpy as np
 
 
 class Oscillator:
-
-    def __init__(self, sample_rate=44100, waveform="sine"):
+    def __init__(
+        self,
+        sample_rate=44100,
+        frequency=440.0,
+        waveform="sine"
+    ):
         self.sample_rate = sample_rate
-        self.frequency = 440.0
-        self.phase = 0.0
+        self.frequency = frequency
         self.waveform = waveform
+        self.phase = 0.0
 
     def set_frequency(self, frequency):
         self.frequency = frequency
@@ -16,49 +20,53 @@ class Oscillator:
         self.waveform = waveform
 
     def generate(self, frames):
-        # Изменение фазы за один сэмпл
-        phase_increment = (
-            2 * np.pi * self.frequency / self.sample_rate
+        # Создаём массив времени для текущего блока samples.
+        time = np.arange(frames) / self.sample_rate
+
+        # Фаза сигнала.
+        phase = (
+            2 * np.pi * self.frequency * time
+            + self.phase
         )
 
-        # Создаём номера сэмплов
-        indices = np.arange(frames)
-
-        # Вычисляем фазу каждого сэмпла
-        phases = self.phase + indices * phase_increment
-
         if self.waveform == "sine":
-            samples = np.sin(phases)
+            wave = np.sin(phase)
 
         elif self.waveform == "square":
-            samples = np.where(
-                np.sin(phases) >= 0,
+            wave = np.where(
+                np.sin(phase) >= 0,
                 1.0,
                 -1.0
             )
 
         elif self.waveform == "saw":
-            samples = (
-                2 * (phases / (2 * np.pi))
-                - 1
+            wave = 2 * (
+                phase / (2 * np.pi)
+                - np.floor(
+                    phase / (2 * np.pi) + 0.5
+                )
             )
 
         elif self.waveform == "triangle":
-            samples = (
-                2 * np.abs(
-                    2 * (phases / (2 * np.pi)) - 1
-                ) - 1
-            )
+            wave = 2 * np.abs(
+                2 * (
+                    phase / (2 * np.pi)
+                    - np.floor(
+                        phase / (2 * np.pi) + 0.5
+                    )
+                )
+            ) - 1
 
         else:
-            raise ValueError(
-                f"Unknown waveform: {self.waveform}"
-    )
-        # Запоминаем фазу,
-        # на которой остановились
+            # Если указана неизвестная форма,
+            # используем sine.
+            wave = np.sin(phase)
+
+        # Запоминаем фазу последнего sample,
+        # чтобы следующий блок продолжал предыдущий.
         self.phase = (
-            phases[-1] + phase_increment
+            phase[-1] + 2 * np.pi * self.frequency / self.sample_rate
         ) % (2 * np.pi)
 
-        return samples
+        return wave
     

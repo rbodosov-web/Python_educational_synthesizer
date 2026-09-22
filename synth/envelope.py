@@ -3,10 +3,10 @@ class ADSR:
     def __init__(
         self,
         sample_rate=44100,
-        attack=1.0,
-        decay=1.0,
-        sustain=0.8,
-        release=2.0,
+        attack=0.1,
+        decay=0.4,
+        sustain=0.5,
+        release=0.2,
     ):
         self.sample_rate = sample_rate
 
