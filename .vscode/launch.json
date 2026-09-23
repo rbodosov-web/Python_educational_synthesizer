@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Package: VX7_sytnesizer.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "VX7_sytnesizer.py"
+        }
+    ]
+}
