@@ -293,7 +293,7 @@ class SynthGUI:
 
         title = tk.Label(
             self.root,
-            text="M Y   S Y N T H",
+            text="M A G A  S Y N T H  1.0 — by R. B.",
             bg="#111111",
             fg="#ffffff",
             font=(
